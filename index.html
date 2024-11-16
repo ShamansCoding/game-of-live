@@ -50,8 +50,21 @@
       display: inline-block;
     }
 
-    button:hover {
-      background: #88c0d0;
+    @media (hover: hover) and (pointer: fine) {
+      button:hover {
+        background: #88c0d0;
+      }
+    }
+
+    button:focus {
+      outline: none;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      button:focus {
+        outline: none;
+        box-shadow: none;
+      }
     }
 
     .controls {
@@ -181,7 +194,7 @@
 
 
     let cols = Math.floor((window.innerWidth * 0.85) / cellSize);
-    let rows = Math.floor((window.innerHeight * 0.65) / cellSize);
+    let rows = Math.floor((window.innerHeight * 0.55) / cellSize);
 
     let width = cols * cellSize;
     let height = rows * cellSize;
