@@ -282,6 +282,11 @@
     let isMouseDown = false;
     let lastCell = null;
 
+    function getPointerCoordinates(event) {
+      const [x, y] = d3.pointer(event, svg.node());
+      return [x, y];
+    }
+
     function handlePointerDown(x, y) {
       isMouseDown = true;
       const row = Math.floor(y / cellSize);
@@ -317,12 +322,12 @@
     }
 
     svg.on("mousedown", (event) => {
-      const [x, y] = d3.pointer(event);
+      const [x, y] = getPointerCoordinates(event);
       handlePointerDown(x, y);
     });
 
     svg.on("mousemove", (event) => {
-      const [x, y] = d3.pointer(event);
+      const [x, y] = getPointerCoordinates(event);
       handlePointerMove(x, y);
     });
 
@@ -330,23 +335,24 @@
       isMouseDown = false;
     });
 
-    // Добавляем обработку событий касания
+
     svg.on("touchstart", (event) => {
       const touch = event.touches[0];
-      const [x, y] = d3.pointer(touch);
+      const [x, y] = getPointerCoordinates(touch);
       handlePointerDown(x, y);
     });
 
     svg.on("touchmove", (event) => {
-      event.preventDefault(); // Чтобы избежать прокрутки страницы
+      event.preventDefault();
       const touch = event.touches[0];
-      const [x, y] = d3.pointer(touch);
+      const [x, y] = getPointerCoordinates(touch);
       handlePointerMove(x, y);
     });
 
     svg.on("touchend", () => {
       isMouseDown = false;
     });
+
 
 
 
