@@ -282,13 +282,10 @@
     let isMouseDown = false;
     let lastCell = null;
 
-
-    svg.on("mousedown", (event) => {
+    function handlePointerDown(x, y) {
       isMouseDown = true;
-      const [x, y] = d3.pointer(event);
       const row = Math.floor(y / cellSize);
       const col = Math.floor(x / cellSize);
-
 
       if (grid[row][col] !== 1) {
         grid[row][col] = 1;
@@ -299,15 +296,12 @@
       }
 
       displayGrid();
-    });
+    }
 
-
-    svg.on("mousemove", (event) => {
+    function handlePointerMove(x, y) {
       if (isMouseDown) {
-        const [x, y] = d3.pointer(event);
         const row = Math.floor(y / cellSize);
         const col = Math.floor(x / cellSize);
-
 
         if (lastCell?.row !== row || lastCell?.col !== col) {
           if (grid[row][col] === 1) {
@@ -320,11 +314,40 @@
           displayGrid();
         }
       }
+    }
+
+    svg.on("mousedown", (event) => {
+      const [x, y] = d3.pointer(event);
+      handlePointerDown(x, y);
+    });
+
+    svg.on("mousemove", (event) => {
+      const [x, y] = d3.pointer(event);
+      handlePointerMove(x, y);
     });
 
     svg.on("mouseup", () => {
       isMouseDown = false;
     });
+
+    // Добавляем обработку событий касания
+    svg.on("touchstart", (event) => {
+      const touch = event.touches[0];
+      const [x, y] = d3.pointer(touch);
+      handlePointerDown(x, y);
+    });
+
+    svg.on("touchmove", (event) => {
+      event.preventDefault(); // Чтобы избежать прокрутки страницы
+      const touch = event.touches[0];
+      const [x, y] = d3.pointer(touch);
+      handlePointerMove(x, y);
+    });
+
+    svg.on("touchend", () => {
+      isMouseDown = false;
+    });
+
 
 
     document.getElementById("generateButton").addEventListener("click", () => {
