@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game of Life - Interactive</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #2e3440, #8fbcbb);
+      color: #eceff4;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 1.25rem;
+      height: 100vh;
+      overflow: hidden;
+      justify-content: center;
+      overflow: scroll;
+    }
+
+    svg {
+      width: max-content;
+      height: max-content;
+      max-width: 100%;
+      max-height: 100%;
+      border: 0.125rem solid #eceff4;
+      border-radius: 1rem;
+      box-shadow: 0 0 1.875rem rgba(255, 255, 255, 0.5);
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button {
+      background: #3b4252;
+      color: #eceff4;
+      border: 0.125rem solid #eceff4;
+      border-radius: 0.625rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 1rem;
+      margin: 0.625rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      display: inline-block;
+    }
+
+    button:hover {
+      background: #88c0d0;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+
+    .generate-button {
+      grid-column: 1;
+    }
+
+    .clear-button {
+      grid-column: 2;
+    }
+
+    .toggle-button {
+      grid-column: 1 / span 2;
+    }
+
+    .slider-container {
+      margin-top: 1.25rem;
+      text-align: center;
+    }
+
+    .slider {
+      width: 12.5rem;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 0.5rem;
+      background: linear-gradient(90deg, #88c0d0, #3b4252);
+      border-radius: 0.625rem;
+      outline: none;
+      transition: background 0.3s ease;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 1.25rem;
+      height: 1.25rem;
+      background: #eceff4;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 1.25rem;
+      height: 1.25rem;
+      background: #eceff4;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider:active {
+      background: linear-gradient(90deg, #88c0d0, #3b4252);
+    }
+
+    #speedLabel {
+      font-size: 1.125rem;
+      color: #eceff4;
+      font-weight: bold;
+      margin-top: 0.625rem;
+      background-color: #3b4252;
+      padding: 0.3125rem 0.9375rem;
+      border-radius: 0.625rem;
+      display: inline-block;
+      text-align: center;
+      box-shadow: 0 0 0.625rem rgba(255, 255, 255, 0.2);
+    }
+
+    .active {
+      background-color: #bf616a;
+    }
+
+    .inactive {
+      background-color: #3b4252;
+    }
+
+
+    /* Small mobile */
+    @media screen and (max-width: 360px) {
+      html {
+        font-size: calc(14px + 2 * ((100vw - 320px) / 360));
+      }
+    }
+
+    /* Mobile to tablet screens */
+    @media screen and (min-width: 361px) and (max-width: 768px) {
+      html {
+        font-size: calc(16px + 2 * ((100vw - 361px) / 768));
+      }
+    }
+
+    /* Laptop and Desktops screens */
+    @media screen and (min-width: 769px) and (max-width: 2048px) {
+      html {
+        font-size: calc(14px + 5 * ((100vw - 769px) / 2048));
+      }
+    }
+
+    /* Excessively large screens */
+    @media screen and (min-width: 2049px) {
+      html {
+        font-size: calc(30px + 15 * ((100vw - 2049px) / 4096));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="gameCanvas"></svg>
+
+  <div class="controls">
+    <button id="generateButton" class="generate-button">Сгенерировать</button>
+    <button id="clearButton" class="clear-button">Очистить</button>
+    <button id="toggleButton" class="inactive toggle-button">Старт</button>
+  </div>
+
+  <div class="slider-container">
+    <input type="range" id="speedSlider" class="slider" min="100" max="1000" value="250" />
+    <div id="speedLabel">Скорость: 250ms</div>
+  </div>
+
+  <script>
+    const cellSize = 20;
+
+
+    let cols = Math.floor((window.innerWidth * 0.85) / cellSize);
+    let rows = Math.floor((window.innerHeight * 0.65) / cellSize);
+
+    let width = cols * cellSize;
+    let height = rows * cellSize;
+
+    let gameInterval;
+    let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+    let isRunning = false;
+
+
+    const svg = d3.select("#gameCanvas")
+      .attr("width", width)
+      .attr("height", height);
+
+    const countLiveNeighbors = (grid, x, y) => {
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1], [0, 1],
+        [1, -1], [1, 0], [1, 1],
+      ];
+      return directions.reduce((sum, [dx, dy]) => {
+        const nx = (x + dx + rows) % rows;
+        const ny = (y + dy + cols) % cols;
+        return sum + grid[nx][ny];
+      }, 0);
+    };
+
+    const getNextState = (grid, x, y) => {
+      const liveNeighbors = countLiveNeighbors(grid, x, y);
+      const cell = grid[x][y];
+      if (cell === 1 && (liveNeighbors < 2 || liveNeighbors > 3)) return 0;
+      if (cell === 0 && liveNeighbors === 3) return 1;
+      return cell;
+    };
+
+    const getNextGeneration = (grid) => {
+      return grid.map((row, x) => row.map((cell, y) => getNextState(grid, x, y)));
+    };
+
+    const displayGrid = () => {
+      const cells = svg.selectAll(".cell")
+        .data(grid.flat());
+
+
+      cells
+        .attr("cx", (d, i) => (i % cols) * cellSize + cellSize / 2)
+        .attr("cy", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+        .attr("r", cellSize / 3)
+        .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440");
+
+
+      cells.enter()
+        .append("circle")
+        .attr("class", "cell")
+        .attr("cx", (d, i) => (i % cols) * cellSize + cellSize / 2)
+        .attr("cy", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+        .attr("r", cellSize / 3)
+        .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440")
+
+
+      cells.exit().remove();
+    };
+
+
+    const startGame = () => {
+      clearInterval(gameInterval);
+      gameInterval = setInterval(() => {
+        grid = getNextGeneration(grid);
+        displayGrid();
+      }, document.getElementById("speedSlider").value);
+      isRunning = true;
+      updateButtonState();
+    };
+
+    const stopGame = () => {
+      clearInterval(gameInterval);
+      isRunning = false;
+      updateButtonState();
+    };
+
+    const updateButtonState = () => {
+      const button = document.getElementById("toggleButton");
+      if (isRunning) {
+        button.textContent = "Стоп";
+        button.classList.remove("inactive");
+        button.classList.add("active");
+      } else {
+        button.textContent = "Старт";
+        button.classList.remove("active");
+        button.classList.add("inactive");
+      }
+    };
+
+    const clearGrid = () => {
+      grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+      displayGrid();
+    };
+
+    let isMouseDown = false;
+    let lastCell = null;
+
+
+    svg.on("mousedown", (event) => {
+      isMouseDown = true;
+      const [x, y] = d3.pointer(event);
+      const row = Math.floor(y / cellSize);
+      const col = Math.floor(x / cellSize);
+
+
+      if (grid[row][col] !== 1) {
+        grid[row][col] = 1;
+        lastCell = { row, col };
+      } else {
+        grid[row][col] = 0;
+        lastCell = null;
+      }
+
+      displayGrid();
+    });
+
+
+    svg.on("mousemove", (event) => {
+      if (isMouseDown) {
+        const [x, y] = d3.pointer(event);
+        const row = Math.floor(y / cellSize);
+        const col = Math.floor(x / cellSize);
+
+
+        if (lastCell?.row !== row || lastCell?.col !== col) {
+          if (grid[row][col] === 1) {
+            grid[row][col] = 0;
+          } else {
+            grid[row][col] = 1;
+          }
+
+          lastCell = { row, col };
+          displayGrid();
+        }
+      }
+    });
+
+    svg.on("mouseup", () => {
+      isMouseDown = false;
+    });
+
+
+    document.getElementById("generateButton").addEventListener("click", () => {
+      grid = grid.map(row => row.map(() => Math.random() > 0.7 ? 1 : 0));
+      displayGrid();
+    });
+
+    document.getElementById("toggleButton").addEventListener("click", () => {
+      if (isRunning) {
+        stopGame();
+      } else {
+        startGame();
+      }
+    });
+
+    document.getElementById("clearButton").addEventListener("click", () => {
+      clearGrid();
+      stopGame();
+    });
+
+    document.getElementById("speedSlider").addEventListener("input", (event) => {
+      const speedValue = event.target.value;
+      document.getElementById("speedLabel").textContent = `Скорость: ${speedValue}ms`;
+      if (isRunning) {
+        startGame();
+      }
+    });
+
+    displayGrid();
+
+  </script>
+</body>
+
+</html>
