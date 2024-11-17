@@ -87,7 +87,7 @@
     }
 
     .toggle-button {
-      grid-column: 1 / span 2;
+      grid-column: 1;
     }
 
     .slider-container {
@@ -148,6 +148,17 @@
       background-color: #3b4252;
     }
 
+    .generationDisplay {
+      display: flex;
+      align-items: center;
+      color: #eceff4;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      grid-column: 2;
+      padding: 0.125rem 0.625rem;
+      margin-bottom: 0;
+    }
+
 
     /* Small mobile */
     @media screen and (max-width: 360px) {
@@ -186,6 +197,7 @@
     <button id="generateButton" class="generate-button">Сгенерировать</button>
     <button id="clearButton" class="clear-button">Очистить</button>
     <button id="toggleButton" class="inactive toggle-button">Старт</button>
+    <div id="generationDisplay" class="generationDisplay">Поколение: 0</div>
     <div class="slider-container" style="grid-column: 1">
       <input type="range" id="speedSlider" class="slider" min="1" max="10" value="5" />
       <div id="speedLabel">Скорость: 5</div>
@@ -209,6 +221,12 @@
 
     let gameInterval;
     let isRunning = false;
+
+    let generationCount = 0;
+
+    const updateGenerationDisplay = () => {
+      document.getElementById("generationDisplay").textContent = `Поколение: ${generationCount}`;
+    };
 
 
     const svg = d3.select("#gameCanvas")
@@ -237,6 +255,8 @@
     };
 
     const getNextGeneration = (grid) => {
+      generationCount++; // Reset the generation count
+      updateGenerationDisplay(); // Update the displayed generation count
       return grid.map((row, x) => row.map((cell, y) => getNextState(grid, x, y)));
     };
 
@@ -297,6 +317,8 @@
 
     const clearGrid = () => {
       grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+      generationCount = 0;
+      updateGenerationDisplay();
       displayGrid();
     };
 
