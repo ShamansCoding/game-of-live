@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game of Life - Interactive</title>
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
@@ -136,7 +135,7 @@
       font-weight: bold;
       margin-top: 0.625rem;
       background-color: #3b4252;
-      padding: 0.3125rem 0.9375rem;
+      padding: 0.3125rem;
       border-radius: 0.625rem;
       box-shadow: 0 0 0.625rem rgba(255, 255, 255, 0.2);
     }
@@ -188,8 +187,8 @@
     <button id="clearButton" class="clear-button">Очистить</button>
     <button id="toggleButton" class="inactive toggle-button">Старт</button>
     <div class="slider-container" style="grid-column: 1">
-      <input type="range" id="speedSlider" class="slider" min="100" max="1000" value="250" />
-      <div id="speedLabel">Скорость: 250ms</div>
+      <input type="range" id="speedSlider" class="slider" min="1" max="10" value="5" />
+      <div id="speedLabel">Скорость: 5</div>
     </div>
     <div class="slider-container" style="grid-column: 2">
       <input type="range" id="cellSizeSlider" class="slider" min="10" max="30" value="10" />
@@ -268,14 +267,15 @@
 
     const startGame = () => {
       clearInterval(gameInterval);
+
+      const speed = 1100 - (document.getElementById("speedSlider").value * 100);
       gameInterval = setInterval(() => {
         grid = getNextGeneration(grid);
         displayGrid();
-      }, document.getElementById("speedSlider").value);
+      }, speed);
       isRunning = true;
       updateButtonState();
     };
-
     const stopGame = () => {
       clearInterval(gameInterval);
       isRunning = false;
@@ -396,12 +396,11 @@
 
     document.getElementById("speedSlider").addEventListener("input", (event) => {
       const speedValue = event.target.value;
-      document.getElementById("speedLabel").textContent = `Скорость: ${speedValue}ms`;
+      document.getElementById("speedLabel").textContent = `Скорость: ${speedValue}`;
       if (isRunning) {
         startGame();
       }
     });
-
 
     document.getElementById("cellSizeSlider").addEventListener("input", (event) => {
       const newCellSize = event.target.value;
