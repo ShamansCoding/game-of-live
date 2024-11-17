@@ -353,6 +353,7 @@
 
 
     svg.on("touchstart", (event) => {
+      event.preventDefault();
       const touch = event.touches[0];
       const [x, y] = getPointerCoordinates(touch);
       handlePointerDown(x, y);
