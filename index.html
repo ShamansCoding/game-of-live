@@ -64,6 +64,7 @@
       body {
         justify-content: flex-start;
       }
+
       button:focus {
         outline: none;
         box-shadow: none;
@@ -73,7 +74,7 @@
     .controls {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
+      grid-template-rows: auto auto auto;
     }
 
     .generate-button {
@@ -89,12 +90,12 @@
     }
 
     .slider-container {
-      margin-top: 1.25rem;
       text-align: center;
+      padding: 0.625rem;
     }
 
     .slider {
-      width: 12.5rem;
+      width: 10rem;
       -webkit-appearance: none;
       appearance: none;
       height: 0.5rem;
@@ -126,16 +127,15 @@
       background: linear-gradient(90deg, #88c0d0, #3b4252);
     }
 
-    #speedLabel {
-      font-size: 1.125rem;
+    #speedLabel,
+    #cellSizeLabel {
+      font-size: 1rem;
       color: #eceff4;
       font-weight: bold;
       margin-top: 0.625rem;
       background-color: #3b4252;
       padding: 0.3125rem 0.9375rem;
       border-radius: 0.625rem;
-      display: inline-block;
-      text-align: center;
       box-shadow: 0 0 0.625rem rgba(255, 255, 255, 0.2);
     }
 
@@ -185,15 +185,18 @@
     <button id="generateButton" class="generate-button">Сгенерировать</button>
     <button id="clearButton" class="clear-button">Очистить</button>
     <button id="toggleButton" class="inactive toggle-button">Старт</button>
-  </div>
-
-  <div class="slider-container">
-    <input type="range" id="speedSlider" class="slider" min="100" max="1000" value="250" />
-    <div id="speedLabel">Скорость: 250ms</div>
+    <div class="slider-container" style="grid-column: 1">
+      <input type="range" id="speedSlider" class="slider" min="100" max="1000" value="250" />
+      <div id="speedLabel">Скорость: 250ms</div>
+    </div>
+    <div class="slider-container" style="grid-column: 2">
+      <input type="range" id="cellSizeSlider" class="slider" min="10" max="30" value="10" />
+      <div id="cellSizeLabel">Размер клетки: 10</div>
+    </div>
   </div>
 
   <script>
-    const cellSize = 20;
+    let cellSize = 10;
 
 
     let cols = Math.floor((window.innerWidth * 0.85) / cellSize);
@@ -201,9 +204,9 @@
 
     let width = cols * cellSize;
     let height = rows * cellSize;
+    let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
 
     let gameInterval;
-    let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
     let isRunning = false;
 
 
@@ -236,17 +239,19 @@
       return grid.map((row, x) => row.map((cell, y) => getNextState(grid, x, y)));
     };
 
-    const displayGrid = () => {
-      const cells = svg.selectAll(".cell")
-        .data(grid.flat());
+    const displayGrid = ({ partialUpdate = true } = {}) => {
+      const cells = svg.selectAll(".cell").data(grid.flat(), (_, i) => i);
 
-
-      cells
-        .attr("cx", (d, i) => (i % cols) * cellSize + cellSize / 2)
-        .attr("cy", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
-        .attr("r", cellSize / 3)
-        .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440");
-
+      if (partialUpdate) {
+        cells
+          .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440");
+      } else {
+        cells
+          .attr("cx", (d, i) => (i % cols) * cellSize + cellSize / 2)
+          .attr("cy", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
+          .attr("r", cellSize / 3)
+          .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440");
+      }
 
       cells.enter()
         .append("circle")
@@ -254,12 +259,10 @@
         .attr("cx", (d, i) => (i % cols) * cellSize + cellSize / 2)
         .attr("cy", (d, i) => Math.floor(i / cols) * cellSize + cellSize / 2)
         .attr("r", cellSize / 3)
-        .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440")
-
+        .attr("fill", d => d === 1 ? "#a3be8c" : "#2e3440");
 
       cells.exit().remove();
     };
-
 
     const startGame = () => {
       clearInterval(gameInterval);
@@ -371,8 +374,6 @@
     });
 
 
-
-
     document.getElementById("generateButton").addEventListener("click", () => {
       grid = grid.map(row => row.map(() => Math.random() > 0.7 ? 1 : 0));
       displayGrid();
@@ -397,6 +398,27 @@
       if (isRunning) {
         startGame();
       }
+    });
+
+
+    document.getElementById("cellSizeSlider").addEventListener("input", (event) => {
+      const newCellSize = event.target.value;
+      document.getElementById("cellSizeLabel").textContent = `Размер клетки: ${newCellSize}`;
+
+      cellSize = newCellSize;
+      cols = Math.floor((window.innerWidth * 0.85) / cellSize);
+      rows = Math.floor((window.innerHeight * 0.55) / cellSize);
+      width = cols * cellSize;
+      height = rows * cellSize;
+
+      svg.attr("width", width).attr("height", height);
+      grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+      if (isRunning) {
+        startGame();
+      }
+
+      displayGrid({ partialUpdate: false });
     });
 
     displayGrid();
